@@ -1,0 +1,141 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluentd
+  namespace: logging
+  labels:
+    app: logging
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fluentd
+  namespace: logging
+  labels:
+    app: logging
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - namespaces
+    verbs:
+      - get
+      - list
+      - watch
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: fluentd
+  labels:
+    app: logging
+roleRef:
+  kind: ClusterRole
+  name: fluentd
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: fluentd
+    namespace: logging
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: es-template
+  namespace: logging
+data:
+  index_template.json: |-
+    {
+        "index_patterns": [
+            "logstash-default*"
+        ],
+        "settings": {
+            "index": {
+                "number_of_replicas": "3"
+            }
+        }
+    }
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluentd
+  namespace: logging
+  labels:
+    k8s-app: fluentd
+    version: v1
+    app: logging
+spec:
+  selector:
+    matchLabels:
+      k8s-app: fluentd
+      version: v1
+  template:
+    metadata:
+      labels:
+        k8s-app: fluentd
+        version: v1
+    spec:
+      serviceAccount: fluentd
+      serviceAccountName: fluentd
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: fluentd
+          image: fluent/fluentd-kubernetes-daemonset:v1-debian-elasticsearch
+          env:
+            - name: FLUENT_ELASTICSEARCH_USER
+              value: "elastic"
+            - name: FLUENT_ELASTICSEARCH_PASSWORD
+              valueFrom: 
+                secretKeyRef:
+                  name: elasticsearch-pw
+                  key: password
+            - name: FLUENT_ELASTICSEARCH_HOST
+              value: "elasticsearch-es-http"
+            - name: FLUENT_ELASTICSEARCH_PORT
+              value: "9200"
+            - name: FLUENTD_SYSTEMD_CONF
+              value: disable
+            - name: FLUENTD_PROMETHEUS_CONF
+              value: disable
+            - name: FLUENT_ELASTICSEARCH_ENABLE_ILM
+              value: "true"
+            - name: FLUENT_ELASTICSEARCH_ILM_POLICY
+              value: '{ "policy": { "phases": { "hot": { "min_age": "0ms", "actions": { "rollover": { "max_age": "10m", "max_size": "1mb" } } }, "delete": { "min_age": "15m", "actions": { "delete": {}}}}}}'
+            - name: FLUENT_ELASTICSEARCH_TEMPLATE_FILE
+              value: /host/index_template.json
+            - name: FLUENT_ELASTICSEARCH_TEMPLATE_NAME
+              value: "logstash-default"
+          resources:
+            limits:
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 200Mi
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log
+            - name: varlibdockercontainers
+              mountPath: /var/lib/docker/containers
+              readOnly: true
+            - name: es-template
+              mountPath: /host
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: varlog
+          hostPath:
+            path: /var/log
+        - name: varlibdockercontainers
+          hostPath:
+            path: /var/lib/docker/containers
+        - name: es-template
+          configMap:
+            name: es-template
