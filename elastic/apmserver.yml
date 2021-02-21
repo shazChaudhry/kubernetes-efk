@@ -1,0 +1,12 @@
+apiVersion: apm.k8s.elastic.co/v1
+kind: ApmServer
+metadata:
+  name: apmserver
+  namespace: logging
+spec:
+  version: 7.10.2
+  count: 1
+  elasticsearchRef:
+    name: elasticsearch
+  kibanaRef:
+    name: kibana

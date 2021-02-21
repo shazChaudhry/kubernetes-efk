@@ -1,79 +1,50 @@
-## Elastic Cloud on Kubernetes
+# Elastic Cloud on Kubernetes
 https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
 
-Once elasticsearch has been deployed and is showing healthy, use the following command to retrieve password:
+*NOTE*: Namespace in the elasticstack has been changed to `logging`
+
+In this repository, we will be setting up Elasticsearch and Kibana and then Fluentd
+
+## Elastic
+In this section, we will set up elastitc operator along with Elasticsearch and Kibana
+### Deploy ECK in your Kubernetes cluster
+Install custom resource definitions and the operator with its RBAC rules: 
+- `kubectl apply -f elastic/all-in-one.yaml`
+- `kubectl -n logging logs -f statefulset.apps/elastic-operator` - Monitor the operator logs: 
+
+### Deploy an Elasticsearch cluster
+Apply a simple Elasticsearch cluster specification, with three Elasticsearch node:
+- Deploy elasticsearch: `kubectl apply -f elastic/elasticsearch.yaml`
+- Monitor cluster health and creation progress: 
+  - `kubectl get elasticsearch -n logging`
+  - `kubectl get pods -n logging --selector='elasticsearch.k8s.elastic.co/cluster-name=elasticsearch'` 
+
+### Deploy a Kibana instance
+Specify a Kibana instance and associate it with your Elasticsearch cluster: 
+- `kubectl apply -f elastic/kibana.yaml`
+- `kubectl get kibana -n logging`
+
+## Get elastic credentials:
+Once elasticsearch has been deployed and is showing healthy, use the following command to retrieve password. These credentials will be used by both 
+fluentd and beats:
 - `export PASSWORD=$(kubectl get secret elasticsearch-es-elastic-user -o go-template='{{.data.elastic | base64decode}}' -n logging)`
+- `kubectl create secret generic elasticsearch-pw -n logging --from-literal password=$PASSWORD`
 - `echo $PASSWORD`
 
-Generate passwords for Elasticsearch default users:
-- `kubectl exec -it elasticsearch-es-default-0 -n logging -- bin/elasticsearch-setup-passwords auto -b`
-
 ## Deploy Fluentd
+In this section, we will deploy fluentd _(as a DaemonSet)_ which will also set up and index lifecycle management in Elasticsearch:
+- `kubectl apply -f fluentd/fluentd.yaml`
+
+## Index patterns
+Before you can view logs, you will need to cearte a timestemp based index pattern: 
+- `logstash-*`
+
+### References
 - https://github.com/fluent/fluentd-kubernetes-daemonset
 - https://github.com/uken/fluent-plugin-elasticsearch
 - https://github.com/fluent/fluentd-kubernetes-daemonset/blob/master/templates/conf/fluent.conf.erb
 
-Before deploying Fluentd, create a Kubernetes Secret. Elasticsearch will otherwise refuse the connection:
-- `kubectl create secret generic elasticsearch-pw -n logging --from-literal password=$PASSWORD`
-
-## Nginx Ingress controller
-https://github.com/nginxinc/kubernetes-ingress
-
 ## Test shipping of contaier logs
-kubectl run pingpong --image alpine ping 8.8.8.8
-
-## Setting up a stream in Elasticsearch
-```Bash
-DELETE _ilm/policy/fluentd_policy
-GET _ilm/policy/fluentd_policy
-PUT _ilm/policy/fluentd_policy
-{
-  "policy": {
-    "phases": {
-      "hot": {                      
-        "actions": {
-          "rollover": {
-            "max_size": "1mb",     
-            "max_age": "2m"
-          }
-        }
-      },
-      "delete": {
-        "min_age": "5m",           
-        "actions": {
-          "delete": {}              
-        }
-      }
-    }
-  }
-}
-
-DELETE _index_template/fluentd_template
-GET _index_template/fluentd_template
-PUT _index_template/fluentd_template
-{
-  "index_patterns": ["fluentd"],                   
-  "data_stream": {},
-  "priority": 200,
-  "template": {
-    "settings": {
-      "number_of_shards": 1,
-      "number_of_replicas": 1,
-      "index.lifecycle.name": "fluentd_policy"     
-    }
-  }
-}
-
-DELETE fluentd/_doc
-PUT /fluentd/_bulk?refresh
-{"create":{ }}
-{ "@timestamp": "2020-12-08T11:04:05.000Z", "user": { "id": "vlb44hny" }, "message": "Login attempt failed" }
-{"create":{ }}
-{ "@timestamp": "2020-12-08T11:06:07.000Z", "user": { "id": "8a4f500d" }, "message": "Login successful" }
-{"create":{ }}
-{ "@timestamp": "2020-12-09T11:07:08.000Z", "user": { "id": "l7gk7f82" }, "message": "Logout successful" }
-
-GET .ds-fluentd-*/_ilm/explain
-GET /_data_stream/fluentd
-DELETE /_data_stream/fluentd
-```
+- `kubectl run pingpong --image alpine ping 8.8.8.8`
+- Visit `http://localhost:5601/` in your web browser
+- log in with user = `elastic` and password that you retrieved above
