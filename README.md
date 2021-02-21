@@ -36,8 +36,10 @@ In this section, we will deploy fluentd _(as a DaemonSet)_ which will also set u
 - `kubectl apply -f fluentd/fluentd.yaml`
 
 ## Index patterns
-Before you can view logs, you will need to cearte a timestemp based index pattern: 
-- `logstash-*`
+Before you can view logs in Kibana: 
+- you will need to create a timestemp based index pattern `logstash-*`
+- Visit `http://localhost:5601/` in your web browser
+- Log in with user = `elastic` and password that you retrieved above
 
 ### References
 - https://github.com/fluent/fluentd-kubernetes-daemonset
@@ -46,5 +48,3 @@ Before you can view logs, you will need to cearte a timestemp based index patter
 
 ## Test shipping of contaier logs
 - `kubectl run pingpong --image alpine ping 8.8.8.8`
-- Visit `http://localhost:5601/` in your web browser
-- log in with user = `elastic` and password that you retrieved above
