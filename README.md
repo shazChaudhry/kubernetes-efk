@@ -1,7 +1,7 @@
 # Elastic Cloud on Kubernetes
 https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
 
-*NOTE*: Namespace in the elasticstack has been changed to `logging`
+**NOTE**: Namespace in the elasticstack has been changed to `logging`
 
 In this repository, we will be setting up Elasticsearch and Kibana and then Fluentd
 
