@@ -96,8 +96,8 @@ spec:
             - name: FLUENT_ELASTICSEARCH_PASSWORD
               valueFrom: 
                 secretKeyRef:
-                  name: elasticsearch-pw
-                  key: password
+                  name: elasticsearch-es-elastic-user
+                  key: elastic
             - name: FLUENT_ELASTICSEARCH_HOST
               value: "elasticsearch-es-http"
             - name: FLUENT_ELASTICSEARCH_PORT

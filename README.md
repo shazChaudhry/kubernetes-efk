@@ -3,11 +3,11 @@ https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html
 
 **NOTE**: Namespace in the elasticstack has been changed to `logging`
 
-In this repository, we will be setting up Elasticsearch and Kibana and then Fluentd
+In this repository, we will be setting up Elasticsearch, Kibana and then Fluentd
 
 ## Elastic
 In this section, we will set up elastitc operator along with Elasticsearch and Kibana
-### Deploy ECK in your Kubernetes cluster
+### Deploy ECK
 Install custom resource definitions and the operator with its RBAC rules: 
 - `kubectl apply -f elastic/all-in-one.yaml`
 - `kubectl -n logging logs -f statefulset.apps/elastic-operator` - Monitor the operator logs: 
@@ -28,7 +28,6 @@ Specify a Kibana instance and associate it with your Elasticsearch cluster:
 Once elasticsearch has been deployed and is showing healthy, use the following command to retrieve password. These credentials will be used by both 
 fluentd and beats:
 - `export PASSWORD=$(kubectl get secret elasticsearch-es-elastic-user -o go-template='{{.data.elastic | base64decode}}' -n logging)`
-- `kubectl create secret generic elasticsearch-pw -n logging --from-literal password=$PASSWORD`
 - `echo $PASSWORD`
 
 ## Deploy Fluentd
