@@ -52,7 +52,7 @@ data:
   index_template.json: |-
     {
         "index_patterns": [
-            "logstash-default*"
+            "project_logs*"
         ],
         "settings": {
             "index": {
@@ -121,6 +121,8 @@ spec:
             - name: FLUENT_ELASTICSEARCH_TEMPLATE_FILE
               value: /host/index_template.json
             - name: FLUENT_ELASTICSEARCH_TEMPLATE_NAME
+              value: "project_logs"
+            - name: FLUENT_ELASTICSEARCH_ILM_POLICY_ID
               value: "project_logs"
           resources:
             limits:
