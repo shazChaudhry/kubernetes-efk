@@ -15,6 +15,6 @@ spec:
     tls:
       selfSignedCertificate:
         disabled: true
-    service:
-      spec:
-        type: LoadBalancer
+    # service:
+    #   spec:
+    #     type: LoadBalancer

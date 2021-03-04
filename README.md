@@ -28,7 +28,7 @@ Specify a Kibana instance and associate it with your Elasticsearch cluster:
 Once elasticsearch has been deployed and is showing healthy, use the following command to retrieve password. These credentials will be used by both 
 fluentd and beats:
 - `export PASSWORD=$(kubectl get secret elasticsearch-es-elastic-user -o go-template='{{.data.elastic | base64decode}}' -n logging)`
-- `echo $PASSWORD`
+- `echo $PASSWORD; echo`
 
 ## Deploy Fluentd
 In this section, we will deploy fluentd _(as a DaemonSet)_ which will also set up and index lifecycle management in Elasticsearch:
@@ -36,8 +36,9 @@ In this section, we will deploy fluentd _(as a DaemonSet)_ which will also set u
 
 ## Index patterns
 Before you can view logs in Kibana: 
-- you will need to create a timestemp based index pattern `logstash-*`
+- `kubectl port-forward service/kibana-kb-http 5601 -n logging`
 - Visit `http://localhost:5601/` in your web browser
+- you will need to create a timestemp based index pattern `logstash-*`
 - Log in with user = `elastic` and password that you retrieved above
 
 ### References
