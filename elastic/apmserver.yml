@@ -2,11 +2,30 @@ apiVersion: apm.k8s.elastic.co/v1
 kind: ApmServer
 metadata:
   name: apmserver
-  namespace: logging
+  namespace: elastic-system
 spec:
-  version: 7.10.2
+  version: 7.11.1
   count: 1
   elasticsearchRef:
     name: elasticsearch
   kibanaRef:
     name: kibana
+  config:
+    # https://www.elastic.co/guide/en/apm/server/7.11/monitoring-metricbeat-collection.html
+    http.enabled: true
+    http.port: 5066
+    http.host: 0.0.0.0
+    monitoring.enabled: true
+  podTemplate:
+    metadata:
+      labels:
+        stack-monitoring.elastic.co/type: beat # to allow autodiscover by metricbeat
+      annotations:
+        co.elastic.logs/enabled: "true"
+    spec:
+      containers:
+      - name: apm-server
+        ports:
+        - containerPort: 5066
+          name: monitoring
+          protocol: TCP

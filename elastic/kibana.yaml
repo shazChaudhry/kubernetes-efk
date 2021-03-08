@@ -3,18 +3,28 @@ apiVersion: kibana.k8s.elastic.co/v1
 kind: Kibana
 metadata:
   name: kibana
-  namespace: logging
+  namespace: elastic-system
   labels:
     app: logging
 spec:
-  version: 7.10.2
+  version: 7.11.1
   count: 1
   elasticsearchRef:
     name: elasticsearch
-  http:
-    tls:
-      selfSignedCertificate:
-        disabled: true
-    # service:
-    #   spec:
-    #     type: LoadBalancer
+  config:
+    # https://www.elastic.co/guide/en/kibana/7.11/monitoring-metricbeat.html
+    xpack.monitoring.kibana.collection.enabled: true
+    xpack.monitoring.collection.enabled: true
+  podTemplate:
+    metadata:
+      labels:
+        stack-monitoring.elastic.co/type: kb # to allow autodiscover by metricbeat
+      annotations:
+        co.elastic.logs/enabled: "true"
+  # http:
+  #   tls:
+  #     selfSignedCertificate:
+  #       disabled: true
+  #   service:
+  #     spec:
+  #       type: LoadBalancer

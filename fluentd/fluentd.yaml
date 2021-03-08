@@ -3,7 +3,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: fluentd
-  namespace: logging
+  namespace: elastic-system
   labels:
     app: logging
 
@@ -12,7 +12,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: fluentd
-  namespace: logging
+  namespace: elastic-system
   labels:
     app: logging
 rules:
@@ -32,7 +32,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: fluentd
   labels:
-    app: logging
+    app: elastic-system
 roleRef:
   kind: ClusterRole
   name: fluentd
@@ -40,14 +40,14 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: fluentd
-    namespace: logging
+    namespace: elastic-system
 
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: es-template
-  namespace: logging
+  namespace: elastic-system
 data:
   index_template.json: |-
     {
@@ -66,7 +66,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: fluentd
-  namespace: logging
+  namespace: elastic-system
   labels:
     k8s-app: fluentd
     version: v1
@@ -110,6 +110,8 @@ spec:
               value: "true"
             - name: FLUENT_ELASTICSEARCH_ILM_POLICY_OVERWRITE
               value: "true"
+            - name: FLUENT_ELASTICSEARCH_SCHEME
+              value: "https"
             - name: FLUENTD_SYSTEMD_CONF
               value: disable
             - name: FLUENTD_PROMETHEUS_CONF

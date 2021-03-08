@@ -3,19 +3,28 @@ apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
   name: elasticsearch
-  namespace: logging
+  namespace: elastic-system
   labels:
     app: logging
 spec:
-  version: 7.10.2
-  http:
-    tls:
-      selfSignedCertificate:
-        disabled: true
+  version: 7.11.1
+  # http:
+  #   tls:
+  #     selfSignedCertificate:
+  #       disabled: true
   nodeSets:
     - name: default
       count: 1
+      config:
+        # https://www.elastic.co/guide/en/elasticsearch/reference/7.11/configuring-metricbeat.html
+        xpack.monitoring.collection.enabled: true
+        xpack.monitoring.elasticsearch.collection.enabled: true
       podTemplate:
+        metadata:
+          labels:
+            stack-monitoring.elastic.co/type: es # to allow autodiscover by metricbeat
+          annotations:
+            co.elastic.logs/enabled: "true"
         spec:
           initContainers:
             - name: sysctl
@@ -25,5 +34,4 @@ spec:
           volumes:
             - name: elasticsearch-data
               emptyDir: {}
-      config:
-        xpack.monitoring.collection.enabled: true
+
